@@ -20,7 +20,7 @@ def main():
     # Initialize main application window
     app = tk.Tk()
     app.resizable(False, False)
-    app.title("DSR SaveDaSit")
+    app.title("DSR SaveDaSit 1.0.1")
     center_window(app, 450, 610)
     # Determine the correct path to the images and icon
     if getattr(sys, 'frozen', False):
