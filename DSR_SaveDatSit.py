@@ -20,7 +20,7 @@ def main():
     # Initialize main application window
     app = tk.Tk()
     app.resizable(False, False)
-    app.title("DSR SaveDaSit 1.0.1")
+    app.title("DSR SaveDaSit 1.0.2")
     center_window(app, 450, 610)
     # Determine the correct path to the images and icon
     if getattr(sys, 'frozen', False):
@@ -318,7 +318,7 @@ def main():
         
         # Create a backup of the current original file
         backup_filename = f"{backup_timestamp}_{os.path.basename(original_file_path)}"
-        shutil.copy2(original_file_path, os.path.join(os.path.dirname(original_file_path), backup_filename))
+        shutil.copy2(original_file_path, os.path.join(destpath_var.get(), backup_filename))
         
         # Restore the backup file over the original file
         shutil.copy2(backup_path, original_file_path)
