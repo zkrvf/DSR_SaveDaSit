@@ -23,7 +23,7 @@ An automation tool for Dark Souls Remastered backups, taking you back in time wh
 
 - [How](#-How)
 - [Compile](#-compile-%EF%B8%8F)
-- [Contribute](#-Contribute)
+- [Contribute](#-contribute-)
 - [FAQ](#-faq-frequently-asked-questions)
 - [License](#-License-)
 
