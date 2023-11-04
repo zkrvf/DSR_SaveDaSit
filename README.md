@@ -22,9 +22,9 @@ An automation tool for Dark Souls Remastered backups, taking you back in time wh
 ## 📚 Table of Contents
 
 - [How](#-How)
-- [Compile](#-Compile)
+- [Compile](#-Compile-)
 - [Contribute](#-Contribute-)
-- [FAQ](##-faq-frequently-asked-questions)
+- [FAQ](#-faq-frequently-asked-questions)
 - [License](#-License-)
 
 ## 📖 How
