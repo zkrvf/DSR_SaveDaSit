@@ -9,6 +9,8 @@ import sys
 import os
 from datetime import datetime
 import re
+import keyboard
+from plyer import notification
 
 def main():
     global map_file
@@ -20,7 +22,7 @@ def main():
     # Initialize main application window
     app = tk.Tk()
     app.resizable(False, False)
-    app.title("DSR SaveDaSit 1.0.2")
+    app.title("DSR SaveDaSit 1.0.3")
     center_window(app, 450, 610)
     # Determine the correct path to the images and icon
     if getattr(sys, 'frozen', False):
@@ -57,16 +59,19 @@ def main():
     tab1 = ttk.Frame(tab_control)
     tab2 = ttk.Frame(tab_control)
     tab3 = ttk.Frame(tab_control)
+    tab4 = ttk.Frame(tab_control)
 
     # Adding tabs to the tab control
     tab_control.add(tab1, text='Backup')
     tab_control.add(tab2, text='Restore')
-    tab_control.add(tab3, text='Author')
-
+    tab_control.add(tab3, text='Hotkeys')
+    tab_control.add(tab4, text='Author')
+    
     # Adding unique content to each tab
     ttk.Label(tab1, text='Backup and configuration').pack(pady=0)
     ttk.Label(tab2, text='Backup List and Restore').pack(pady=0)
-    ttk.Label(tab3, text='zkrvf').pack(pady=0)
+    ttk.Label(tab3, text='Hotkeys and configuration').pack(pady=0)
+    ttk.Label(tab4, text='zkrvf').pack(pady=0)
 
     # Create and package the label with the image
     label_image1 = tk.Label(tab1, image=image)
@@ -75,8 +80,11 @@ def main():
     label_image2 = tk.Label(tab2, image=image)
     label_image2.pack(pady=0)
 
-    label_image3 = tk.Label(tab3, image=image2)
+    label_image3 = tk.Label(tab3, image=image)
     label_image3.pack(pady=0)
+
+    label_image4 = tk.Label(tab4, image=image2)
+    label_image4.pack(pady=0)
 
     # Package the tab control
     tab_control.pack(expand=1, fill='both')
@@ -145,34 +153,40 @@ def main():
         except:
             pass
 
-    def make_backup():
-        def copy_file_with_timestamp():
-            timestamp = time.strftime('%Y%m%d-%H%M%S')
-            filename = f"{timestamp}_{os.path.basename(filepath_var.get())}"
-            dest_path = os.path.join(destpath_var.get(), filename)
-            try:
-                shutil.copy(filepath_var.get(), dest_path)
-                countdown_var.set(f"Backup made in: {dest_path}")
-                print(f"Successful backup on: {dest_path}")  # Debug print
-            except Exception as e:
-                countdown_var.set(f"Error when making backup: {str(e)}")
-                print(f"Error when making backup: {str(e)}")  # Debug print
+    def copy_file_with_timestamp():
+        timestamp = time.strftime('%Y%m%d-%H%M%S')
+        filename = f"{timestamp}_{os.path.basename(filepath_var.get())}"
+        dest_path = os.path.join(destpath_var.get(), filename)
+        try:
+            shutil.copy(filepath_var.get(), dest_path)
+            countdown_var.set(f"Backup made in: {dest_path}")
+            print(f"Successful backup on: {dest_path}")  # Debug print
+        except Exception as e:
+            countdown_var.set(f"Error when making backup: {str(e)}")
+            print(f"Error when making backup: {str(e)}")  # Debug print
 
+    def schedule_backup():
+        time_remaining = int(interval_var.get()) * 60
+
+        def update_countdown():
+            nonlocal time_remaining
+            if time_remaining > 0 and backup_running_var.get():
+                mins, secs = divmod(time_remaining, 60)
+                countdown_var.set(f"Next backup in {mins}m {secs}s")
+                time_remaining -= 1
+                app.after(1000, update_countdown)  # Programa la próxima actualización en 1 segundo
+            elif backup_running_var.get():
+                copy_file_with_timestamp()
+                schedule_backup()  # Programa el siguiente ciclo de backup
+
+        update_countdown()
+
+    def make_backup():
         save_config()
         copy_file_with_timestamp()
         countdown_var.set("Immediate backup done!")
-        time.sleep(2)  # Small pause so that the user notices the change in the interface
+        app.after(2000, schedule_backup)  # Inicia el temporizador después de una pausa de 2 segundos
 
-        while backup_running_var.get():
-            time_remaining = int(interval_var.get()) * 60
-            while time_remaining > 0 and backup_running_var.get():
-                mins, secs = divmod(time_remaining, 60)
-                countdown_var.set(f"Next backup in {mins}m {secs}s")
-                time.sleep(1)
-                time_remaining -= 1
-
-            if backup_running_var.get():
-                copy_file_with_timestamp()
 
     def configure_buttons(is_backup_running):
         start_button.config(state=tk.DISABLED if is_backup_running else tk.NORMAL)
@@ -373,6 +387,94 @@ def main():
     # Add the buttons to the frame
     for idx, (text, cmd) in enumerate(buttons):
         ttk.Button(frame_buttons_tab2, text=text, command=cmd).grid(row=0, column=idx, padx=10, pady=10)
+
+    def make_backup_temp():
+        # Carga la configuración
+        with open('config.json', 'r') as f:
+            data = json.load(f)
+        
+        source_path = data['source']
+        destination_path = os.path.join(data['destination'], 'TEMP')
+
+        # Verifica si existe la carpeta TEMP y la crea si no existe
+        if not os.path.exists(destination_path):
+            os.makedirs(destination_path)
+
+        # Realiza el backup
+        dest_file_path = os.path.join(destination_path, os.path.basename(source_path))
+
+        try:
+            shutil.copy(source_path, dest_file_path)
+            print(f"Successful backup on: {dest_file_path}")  # Debug print
+        except Exception as e:
+            print(f"Error when making backup: {str(e)}")  # Debug print
+
+    def make_restore_temp():
+        # Cargar la configuración
+        with open('config.json', 'r') as f:
+            data = json.load(f)
+        
+        source_path = data['source']
+        temp_backup_path = os.path.join(data['destination'], 'TEMP')
+        main_backup_path = data['destination']  # Ruta principal de los backups
+
+        # Obtener el archivo de backup de la carpeta TEMP
+        try:
+            backup_files = os.listdir(temp_backup_path)
+            if not backup_files:
+                print("No backup file found in TEMP.")
+                return
+
+            backup_file = backup_files[0]  # Asumimos que solo hay un archivo o es el primero
+            full_backup_path = os.path.join(temp_backup_path, backup_file)
+        except Exception as e:
+            print("Error:", str(e))
+            return
+
+        # Crear un backup del archivo original actual en la ruta principal de backups
+        backup_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup_filename = f"{backup_timestamp}_{os.path.basename(source_path)}"
+        backup_original_path = os.path.join(main_backup_path, backup_filename)
+        shutil.copy2(source_path, backup_original_path)
+        
+        # Restaurar el archivo de backup
+        shutil.copy2(full_backup_path, source_path)
+        print(f"File {backup_file} successfully restored!")
+    
+    frame4 = ttk.Frame(tab3)
+    frame4.pack(pady=20, padx=20, fill=tk.X)
+
+    ttk.Label(frame4, text="The following buttons enable you to perform a quick backup and restore, independent of the automatic backup and restore functionality.", wraplength=350).pack(side=tk.TOP, padx=5)
+    ttk.Label(frame4, text="F5 = Quick Backup").pack(side=tk.TOP, padx=5, pady=20)
+    ttk.Label(frame4, text="F8 = Quick Restore").pack(side=tk.TOP, padx=5)
+
+    
+    def make_F5():
+        make_backup_temp()
+        notification.notify(
+            title='Backup done',
+            message='Game backup completed.',
+            app_name='DSR_SaveDatSit',
+            app_icon='src/icon.ico'
+        )
+    
+    def make_F8():
+        make_restore_temp()
+        notification.notify(
+            title='Restore done',
+            message='Game restore completed.',
+            app_name='DSR_SaveDatSit',
+            app_icon='src/icon.ico'
+        )
+        
+    keyboard.add_hotkey('F5', make_F5)
+    keyboard.add_hotkey('F8', make_F8)
+    
+    def on_closing():
+        stop_backup()
+        app.destroy()
+        
+    app.protocol("WM_DELETE_WINDOW", on_closing)
 
     app.mainloop()
 
