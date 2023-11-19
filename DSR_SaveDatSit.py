@@ -22,7 +22,7 @@ def main():
     # Initialize main application window
     app = tk.Tk()
     app.resizable(False, False)
-    app.title("DSR SaveDaSit 1.0.3")
+    app.title("DSR SaveDaSit 1.0.4")
     center_window(app, 450, 610)
     # Determine the correct path to the images and icon
     if getattr(sys, 'frozen', False):
@@ -92,15 +92,13 @@ def main():
     # Variables
     display_filepath_var = tk.StringVar()
     display_destpath_var = tk.StringVar()
-
-    # Definición de variables
     filepath_var = tk.StringVar()
     destpath_var = tk.StringVar()
     interval_var = tk.IntVar(value=1)
     countdown_var = tk.StringVar(value="Waiting for start...")
     backup_running_var = tk.BooleanVar(value=False)
 
-    # Agregando contenido a tab1
+    # Adding content to tab1
     frame1 = ttk.Frame(tab1)
     frame1.pack(pady=5, padx=20, fill=tk.X)
 
@@ -174,10 +172,10 @@ def main():
                 mins, secs = divmod(time_remaining, 60)
                 countdown_var.set(f"Next backup in {mins}m {secs}s")
                 time_remaining -= 1
-                app.after(1000, update_countdown)  # Programa la próxima actualización en 1 segundo
+                app.after(1000, update_countdown)  # Schedule next update in 1 second
             elif backup_running_var.get():
                 copy_file_with_timestamp()
-                schedule_backup()  # Programa el siguiente ciclo de backup
+                schedule_backup()  # Schedule the next backup cycle
 
         update_countdown()
 
@@ -185,7 +183,7 @@ def main():
         save_config()
         copy_file_with_timestamp()
         countdown_var.set("Immediate backup done!")
-        app.after(2000, schedule_backup)  # Inicia el temporizador después de una pausa de 2 segundos
+        app.after(2000, schedule_backup)  # Starts the timer after a 2 second pause
 
 
     def configure_buttons(is_backup_running):
@@ -206,20 +204,20 @@ def main():
     def validate_input(*args):
         value = interval_var.get()
 
-        # Filtrar solo dígitos y cortar a 3 caracteres si es necesario
+        # Filter only digits and cut to 3 characters if necessary
         cleaned_value = "".join(filter(str.isdigit, value))[:3]
 
-        # Si el valor es más grande que 999, establecerlo en 999
+        # If the value is greater than 999, set it to 999
         if cleaned_value and int(cleaned_value) > 999:
             cleaned_value = "999"
 
         interval_var.set(cleaned_value)
 
-    # Configuración inicial
+    # Initial setup
     interval_var = tk.StringVar()
     interval_var.trace("w", validate_input)
 
-    # Elementos de la GUI
+    # GUI Elements
     ttk.Entry(frame3, textvariable=interval_var, width=3).pack(side=tk.LEFT, padx=5)
     ttk.Label(tab1, textvariable=countdown_var).pack(pady=0)
 
@@ -279,12 +277,12 @@ def main():
 
     map_file = {}  # global dictionary to map formatted names to original file names
 
-    def format_timestamp(archivo):
-        timestamp_str = archivo.split("_")[0]
+    def format_timestamp(file):
+        timestamp_str = file.split("_")[0]
         year, month, day, hour, minute, second = timestamp_str[:4], timestamp_str[4:6], timestamp_str[6:8], timestamp_str[9:11], timestamp_str[11:13], timestamp_str[13:15]
         formatted_timestamp = f"{year}/{month}/{day} | {hour}:{minute}:{second}"
         
-        match = re.search(r'\(([^)]+)\)', archivo)
+        match = re.search(r'\(([^)]+)\)', file)
         if match:
             narrative = match.group(1)  # Extract content inside the parentheses
             formatted_timestamp += f" ({narrative.replace('_', ' ')})"
@@ -300,9 +298,9 @@ def main():
             listbox.delete(0, tk.END)
             files = (f for f in os.listdir(destination) if os.path.isfile(os.path.join(destination, f)) and f.endswith('.sl2'))
 
-            for index, archivo in enumerate(sorted(files, reverse=True)):
-                formatted_timestamp = format_timestamp(archivo)
-                map_file[formatted_timestamp] = archivo  # Update the dictionary
+            for index, file in enumerate(sorted(files, reverse=True)):
+                formatted_timestamp = format_timestamp(file)
+                map_file[formatted_timestamp] = file  # Update the dictionary
                 listbox.insert(tk.END, formatted_timestamp)
                 listbox.itemconfig(tk.END, bg='lightblue' if index % 2 == 0 else 'white')
             
@@ -366,7 +364,7 @@ def main():
 
         ttk.Label(windowed, text="Enter a short description:").pack(padx=10, pady=5)
 
-        # Dividiendo en dos líneas
+        # Splitting into two lines
         tackle = ttk.Entry(windowed)
         tackle.pack(padx=10, pady=5)
 
@@ -389,18 +387,18 @@ def main():
         ttk.Button(frame_buttons_tab2, text=text, command=cmd).grid(row=0, column=idx, padx=10, pady=10)
 
     def make_backup_temp():
-        # Carga la configuración
+        # Load configuration
         with open('config.json', 'r') as f:
             data = json.load(f)
         
         source_path = data['source']
         destination_path = os.path.join(data['destination'], 'TEMP')
 
-        # Verifica si existe la carpeta TEMP y la crea si no existe
+        # Checks if the TEMP folder exists and creates it if it does not exist
         if not os.path.exists(destination_path):
             os.makedirs(destination_path)
 
-        # Realiza el backup
+        # Make the backup
         dest_file_path = os.path.join(destination_path, os.path.basename(source_path))
 
         try:
@@ -410,34 +408,34 @@ def main():
             print(f"Error when making backup: {str(e)}")  # Debug print
 
     def make_restore_temp():
-        # Cargar la configuración
+        # Load config
         with open('config.json', 'r') as f:
             data = json.load(f)
         
         source_path = data['source']
         temp_backup_path = os.path.join(data['destination'], 'TEMP')
-        main_backup_path = data['destination']  # Ruta principal de los backups
+        main_backup_path = data['destination']  # Main backup path
 
-        # Obtener el archivo de backup de la carpeta TEMP
+        # Get the backup file from the TEMP folder
         try:
             backup_files = os.listdir(temp_backup_path)
             if not backup_files:
                 print("No backup file found in TEMP.")
                 return
 
-            backup_file = backup_files[0]  # Asumimos que solo hay un archivo o es el primero
+            backup_file = backup_files[0]  # We assume that there is only one file or it is the first
             full_backup_path = os.path.join(temp_backup_path, backup_file)
         except Exception as e:
             print("Error:", str(e))
             return
 
-        # Crear un backup del archivo original actual en la ruta principal de backups
+        # Create a backup of the current original file in the main backup path
         backup_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         backup_filename = f"{backup_timestamp}_{os.path.basename(source_path)}"
         backup_original_path = os.path.join(main_backup_path, backup_filename)
         shutil.copy2(source_path, backup_original_path)
         
-        # Restaurar el archivo de backup
+        # Restore the backup file
         shutil.copy2(full_backup_path, source_path)
         print(f"File {backup_file} successfully restored!")
     
@@ -455,7 +453,7 @@ def main():
             title='Backup done',
             message='Game backup completed.',
             app_name='DSR_SaveDatSit',
-            app_icon='src/icon.ico'
+            app_icon=icon_path
         )
     
     def make_F8():
@@ -464,7 +462,7 @@ def main():
             title='Restore done',
             message='Game restore completed.',
             app_name='DSR_SaveDatSit',
-            app_icon='src/icon.ico'
+            app_icon=icon_path
         )
         
     keyboard.add_hotkey('F5', make_F5)
